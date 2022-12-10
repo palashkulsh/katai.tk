@@ -218,6 +218,7 @@ function init() {
       new go.Binding("isTreeExpanded").makeTwoWay(),
       $("TreeExpanderButton",
         {
+          width: 60,
           name: "BUTTONX", alignment: go.Spot.Bottom, opacity: 0,  // initially not visible
           "_treeExpandedFigure": "TriangleUp",
           "_treeCollapsedFigure": "TriangleDown"
@@ -351,6 +352,15 @@ function load() {
   myDiagram.commandHandler.zoomToFit()
 }
 
+    function collapseall(){
+      myDiagram.findTreeRoots().each(function(n) { n.collapseTree(); })
+      myDiagram.nodes.each(function(n) { n.wasTreeExpanded = false; })
+    }
+
+    function expandall(){
+      myDiagram.findTreeRoots().each(function(n) { n.expandTree(); })
+    }
+    
 window.addEventListener('DOMContentLoaded', init);
   </script>
 
@@ -359,7 +369,12 @@ window.addEventListener('DOMContentLoaded', init);
   <div>
     <div id="myInspector" class="inspector"><table><tbody><tr><td>key</td><td><input type="undefined" tabindex="0" disabled=""></td></tr><tr><td>comments</td><td><input type="undefined" tabindex="1"></td></tr><tr><td>name</td><td><input tabindex="2"></td></tr><tr><td>title</td><td><input tabindex="3"></td></tr><tr><td>parent</td><td><input tabindex="4"></td></tr></tbody></table></div>
   </div>
-  <p><button id="zoomToFit">Zoom to Fit</button> <button id="centerRoot">Center on root</button></p>
+  <p>
+    <button id="zoomToFit">Zoom to Fit</button>
+    <button id="centerRoot">Center on root</button>
+    <button id="CollapseAll" onclick="collapseall()" >Collapse all</button>
+    <button id="ExpandAll" onclick="expandall()">Expand all</button>
+  </p>
   <div>
     <div style="display:none;">
       <button id="SaveButton" onclick="save()" disabled="">Save</button>
