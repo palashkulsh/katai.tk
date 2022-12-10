@@ -1,514 +1,515 @@
 
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <title>Katai family tree</title>
   </head>
   <body>
-  <script src="https://unpkg.com/gojs@2.2.19/release/go.js"></script>
-  <div id="allSampleContent" class="p-4 w-full">
+    <script src="https://unpkg.com/gojs@2.2.19/release/go.js"></script>
+    <h2>For any changes emailto <a href="mailto:palash.kulsh@ymail.com?subject=Requesting%20changes%20in%20Katai%20family%20tree">palash.kulsh@ymail.com</a></h2>
+    <div id="allSampleContent" class="p-4 w-full">
 
-  <link rel="stylesheet" href="https://unpkg.com/gojs@2.2.19/extensions/DataInspector.css">
-  <script src="https://unpkg.com/gojs@2.2.19/extensions/DataInspector.js"></script>
+      <link rel="stylesheet" href="https://unpkg.com/gojs@2.2.19/extensions/DataInspector.css">
+      <script src="https://unpkg.com/gojs@2.2.19/extensions/DataInspector.js"></script>
 
-  <script id="code">
-function init() {
+      <script id="code">
+        function init() {
 
-  // Since 2.2 you can also author concise templates with method chaining instead of GraphObject.make
-  // For details, see https://gojs.net/latest/intro/buildingObjects.html
-  const $ = go.GraphObject.make;  // for conciseness in defining templates
+          // Since 2.2 you can also author concise templates with method chaining instead of GraphObject.make
+          // For details, see https://gojs.net/latest/intro/buildingObjects.html
+          const $ = go.GraphObject.make;  // for conciseness in defining templates
 
-  myDiagram =
-    $(go.Diagram, "myDiagramDiv", // must be the ID or reference to div
-      {
-        allowCopy: false,
-        allowDelete: false,
-        //initialAutoScale: go.Diagram.Uniform,
-        maxSelectionCount: 1, // users can select only one part at a time
-        validCycle: go.Diagram.CycleDestinationTree, // make sure users can only create trees
-        "clickCreatingTool.archetypeNodeData": { // allow double-click in background to create a new node
-          name: "(new person)",
-          title: "",
-          comments: ""
-        },
-        "clickCreatingTool.insertPart": function(loc) {  // override to scroll to the new node
-          const node = go.ClickCreatingTool.prototype.insertPart.call(this, loc);
-          if (node !== null) {
-            this.diagram.select(node);
-            this.diagram.commandHandler.scrollToPart(node);
-            this.diagram.commandHandler.editTextBlock(node.findObject("NAMETB"));
-          }
-          return node;
-        },
-        layout:
-          $(go.TreeLayout,
-            {
-              treeStyle: go.TreeLayout.StyleLastParents,
-              arrangement: go.TreeLayout.ArrangementHorizontal,
-              // properties for most of the tree:
-              angle: 90,
-              layerSpacing: 35,
-              // properties for the "last parents":
-              alternateAngle: 90,
-              alternateLayerSpacing: 35,
-              alternateAlignment: go.TreeLayout.AlignmentBus,
-              alternateNodeSpacing: 20
-            }),
-        "undoManager.isEnabled": true // enable undo & redo
-      });
+          myDiagram =
+            $(go.Diagram, "myDiagramDiv", // must be the ID or reference to div
+              {
+                allowCopy: false,
+                allowDelete: false,
+                //initialAutoScale: go.Diagram.Uniform,
+                maxSelectionCount: 1, // users can select only one part at a time
+                validCycle: go.Diagram.CycleDestinationTree, // make sure users can only create trees
+                "clickCreatingTool.archetypeNodeData": { // allow double-click in background to create a new node
+                  name: "(new person)",
+                  title: "",
+                  comments: ""
+                },
+                "clickCreatingTool.insertPart": function(loc) {  // override to scroll to the new node
+                  const node = go.ClickCreatingTool.prototype.insertPart.call(this, loc);
+                  if (node !== null) {
+                    this.diagram.select(node);
+                    this.diagram.commandHandler.scrollToPart(node);
+                    this.diagram.commandHandler.editTextBlock(node.findObject("NAMETB"));
+                  }
+                  return node;
+                },
+                layout:
+                $(go.TreeLayout,
+                  {
+                    treeStyle: go.TreeLayout.StyleLastParents,
+                    arrangement: go.TreeLayout.ArrangementHorizontal,
+                    // properties for most of the tree:
+                    angle: 90,
+                    layerSpacing: 35,
+                    // properties for the "last parents":
+                    alternateAngle: 90,
+                    alternateLayerSpacing: 35,
+                    alternateAlignment: go.TreeLayout.AlignmentBus,
+                    alternateNodeSpacing: 20
+                  }),
+                "undoManager.isEnabled": true // enable undo & redo
+              });
 
-  // when the document is modified, add a "*" to the title and enable the "Save" button
-  myDiagram.addDiagramListener("Modified", e => {
-    const button = document.getElementById("SaveButton");
-    if (button) button.disabled = !myDiagram.isModified;
-    const idx = document.title.indexOf("*");
-    if (myDiagram.isModified) {
-      if (idx < 0) document.title += "*";
-    } else {
-      if (idx >= 0) document.title = document.title.slice(0, idx);
-    }
-  });
-
-  const levelColors = ["#AC193D", "#2672EC", "#8C0095", "#5133AB",
-    "#008299", "#D24726", "#008A00", "#094AB2"];
-
-  // override TreeLayout.commitNodes to also modify the background brush based on the tree depth level
-  myDiagram.layout.commitNodes = function() {
-    go.TreeLayout.prototype.commitNodes.call(this);  // do the standard behavior
-    // then go through all of the vertexes and set their corresponding node's Shape.fill
-    // to a brush dependent on the TreeVertex.level value
-    myDiagram.layout.network.vertexes.each(v => {
-      if (v.node) {
-        const level = v.level % (levelColors.length);
-        const color = levelColors[level];
-        const shape = v.node.findObject("SHAPE");
-        if (shape) shape.stroke = $(go.Brush, "Linear", { 0: color, 1: go.Brush.lightenBy(color, 0.05), start: go.Spot.Left, end: go.Spot.Right });
-      }
-    });
-  };
-
-  // this is used to determine feedback during drags
-  function mayWorkFor(node1, node2) {
-    if (!(node1 instanceof go.Node)) return false;  // must be a Node
-    if (node1 === node2) return false;  // cannot work for yourself
-    if (node2.isInTreeOf(node1)) return false;  // cannot work for someone who works for you
-    return true;
-  }
-
-  // This function provides a common style for most of the TextBlocks.
-  // Some of these values may be overridden in a particular TextBlock.
-  function textStyle() {
-    return { font: "9pt  Segoe UI,sans-serif", stroke: "white" };
-  }
-
-  // This converter is used by the Picture.
-  function findHeadShot(pic) {
-    if (!pic) return "images/HSnopic.png"; // There are only 16 images on the server
-    return "images/HS" + pic;
-  }
-
-  // define the Node template
-  myDiagram.nodeTemplate =
-    $(go.Node, "Spot",
-      {
-        selectionObjectName: "BODY",
-        mouseEnter: (e, node) => node.findObject("BUTTON").opacity = node.findObject("BUTTONX").opacity = 1,
-        mouseLeave: (e, node) => node.findObject("BUTTON").opacity = node.findObject("BUTTONX").opacity = 0,
-        // handle dragging a Node onto a Node to (maybe) change the reporting relationship
-        mouseDragEnter: (e, node, prev) => {
-          const diagram = node.diagram;
-          const selnode = diagram.selection.first();
-          if (!mayWorkFor(selnode, node)) return;
-          const shape = node.findObject("SHAPE");
-          if (shape) {
-            shape._prevFill = shape.fill;  // remember the original brush
-            shape.fill = "darkred";
-          }
-        },
-        mouseDragLeave: (e, node, next) => {
-          const shape = node.findObject("SHAPE");
-          if (shape && shape._prevFill) {
-            shape.fill = shape._prevFill;  // restore the original brush
-          }
-        },
-        mouseDrop: (e, node) => {
-          const diagram = node.diagram;
-          const selnode = diagram.selection.first();  // assume just one Node in selection
-          if (mayWorkFor(selnode, node)) {
-            // find any existing link into the selected node
-            const link = selnode.findTreeParentLink();
-            if (link !== null) {  // reconnect any existing link
-              link.fromNode = node;
-            } else {  // else create a new link
-              diagram.toolManager.linkingTool.insertLink(node, node.port, selnode, selnode.port);
+          // when the document is modified, add a "*" to the title and enable the "Save" button
+          myDiagram.addDiagramListener("Modified", e => {
+            const button = document.getElementById("SaveButton");
+            if (button) button.disabled = !myDiagram.isModified;
+            const idx = document.title.indexOf("*");
+            if (myDiagram.isModified) {
+              if (idx < 0) document.title += "*";
+            } else {
+              if (idx >= 0) document.title = document.title.slice(0, idx);
             }
-          }
-        }
-      },
-      // for sorting, have the Node.text be the data.name
-      new go.Binding("text", "name"),
-      // bind the Part.layerName to control the Node's layer depending on whether it isSelected
-      new go.Binding("layerName", "isSelected", sel => sel ? "Foreground" : "").ofObject(),
-      $(go.Panel, "Auto",
-        { name: "BODY" },
-        // define the node's outer shape
-        $(go.Shape, "Rectangle",
-          { name: "SHAPE", fill: "#333333", stroke: 'white', strokeWidth: 3.5, portId: "" }),
-        $(go.Panel, "Horizontal",
-          $(go.Picture,
-            {
-              name: "Picture",
-              desiredSize: new go.Size(70, 70),
-              margin: 1.5,
-              source: "images/HSnopic.png"  // the default image
-            },
-            new go.Binding("source", "pic", findHeadShot)),
-          // define the panel where the text will appear
-          $(go.Panel, "Table",
-            {
-              minSize: new go.Size(130, NaN),
-              maxSize: new go.Size(150, NaN),
-              margin: new go.Margin(6, 10, 0, 6),
-              defaultAlignment: go.Spot.Left
-            },
-            $(go.RowColumnDefinition, { column: 2, width: 4 }),
-            $(go.TextBlock, textStyle(),  // the name
-              {
-                name: "NAMETB",
-                row: 0, column: 0, columnSpan: 5,
-                font: "12pt Segoe UI,sans-serif",
-                editable: true, isMultiline: false,
-                minSize: new go.Size(50, 16)
-              },
-              new go.Binding("text", "name").makeTwoWay()),
-            $(go.TextBlock, "Title: ", textStyle(),
-              { row: 1, column: 0 }),
-            $(go.TextBlock, textStyle(),
-              {
-                row: 1, column: 1, columnSpan: 4,
-                editable: true, isMultiline: false,
-                minSize: new go.Size(50, 14),
-                margin: new go.Margin(0, 0, 0, 3)
-              },
-              new go.Binding("text", "title").makeTwoWay()),
-            $(go.TextBlock, textStyle(),
-              { row: 2, column: 0 },
-              new go.Binding("text", "key", v => "ID: " + v)),
-            $(go.TextBlock, textStyle(),  // the comments
-              {
-                row: 3, column: 0, columnSpan: 5,
-                font: "italic 9pt sans-serif",
-                wrap: go.TextBlock.WrapFit,
-                editable: true,  // by default newlines are allowed
-                minSize: new go.Size(100, 14)
-              },
-              new go.Binding("text", "comments").makeTwoWay())
-          ) // end Table Panel
-        ) // end Horizontal Panel
-      ), // end Auto Panel
-      $("Button",
-        $(go.Shape, "PlusLine", { width: 10, height: 10 }),
-        {
-          name: "BUTTON", alignment: go.Spot.Right, opacity: 0,  // initially not visible
-          click: (e, button) => addEmployee(button.part)
-        },
-        // button is visible either when node is selected or on mouse-over
-        new go.Binding("opacity", "isSelected", s => s ? 1 : 0).ofObject()
-      ),
-      new go.Binding("isTreeExpanded").makeTwoWay(),
-      $("TreeExpanderButton",
-        {
-          width: 60,
-          height: 40,
-          name: "BUTTONX", alignment: go.Spot.Bottom, opacity: 0,  // initially not visible
-          "_treeExpandedFigure": "TriangleUp",
-          "_treeCollapsedFigure": "TriangleDown"
-        },
-        // button is visible either when node is selected or on mouse-over
-        new go.Binding("opacity", "isSelected", s => s ? 1 : 0).ofObject()
-      )
-    );  // end Node, a Spot Panel
+          });
 
-  function addEmployee(node) {
-    if (!node) return;
-    const thisemp = node.data;
-    myDiagram.startTransaction("add employee");
-    const newemp = { name: "(new person)", title: "(title)", comments: "", parent: thisemp.key };
-    myDiagram.model.addNodeData(newemp);
-    const newnode = myDiagram.findNodeForData(newemp);
-    if (newnode) newnode.location = node.location;
-    myDiagram.commitTransaction("add employee");
-    myDiagram.commandHandler.scrollToPart(newnode);
-  }
+          const levelColors = ["#AC193D", "#2672EC", "#8C0095", "#5133AB",
+                               "#008299", "#D24726", "#008A00", "#094AB2"];
 
-  // the context menu allows users to make a position vacant,
-  // remove a role and reassign the subtree, or remove a department
-  myDiagram.nodeTemplate.contextMenu =
-    $("ContextMenu",
-      $("ContextMenuButton",
-        $(go.TextBlock, "Add Employee"),
-        {
-          click: (e, button) => addEmployee(button.part.adornedPart)
-        }
-      ),
-      $("ContextMenuButton",
-        $(go.TextBlock, "Vacate Position"),
-        {
-          click: (e, button) => {
-            const node = button.part.adornedPart;
-            if (node !== null) {
-              const thisemp = node.data;
-              myDiagram.startTransaction("vacate");
-              // update the key, name, picture, and comments, but leave the title
-              myDiagram.model.setDataProperty(thisemp, "name", "(Vacant)");
-              myDiagram.model.setDataProperty(thisemp, "pic", "");
-              myDiagram.model.setDataProperty(thisemp, "comments", "");
-              myDiagram.commitTransaction("vacate");
-            }
-          }
-        }
-      ),
-      $("ContextMenuButton",
-        $(go.TextBlock, "Remove Role"),
-        {
-          click: (e, button) => {
-            // reparent the subtree to this node's boss, then remove the node
-            const node = button.part.adornedPart;
-            if (node !== null) {
-              myDiagram.startTransaction("reparent remove");
-              const chl = node.findTreeChildrenNodes();
-              // iterate through the children and set their parent key to our selected node's parent key
-              while (chl.next()) {
-                const emp = chl.value;
-                myDiagram.model.setParentKeyForNodeData(emp.data, node.findTreeParentNode().data.key);
+          // override TreeLayout.commitNodes to also modify the background brush based on the tree depth level
+          myDiagram.layout.commitNodes = function() {
+            go.TreeLayout.prototype.commitNodes.call(this);  // do the standard behavior
+            // then go through all of the vertexes and set their corresponding node's Shape.fill
+            // to a brush dependent on the TreeVertex.level value
+            myDiagram.layout.network.vertexes.each(v => {
+              if (v.node) {
+                const level = v.level % (levelColors.length);
+                const color = levelColors[level];
+                const shape = v.node.findObject("SHAPE");
+                if (shape) shape.stroke = $(go.Brush, "Linear", { 0: color, 1: go.Brush.lightenBy(color, 0.05), start: go.Spot.Left, end: go.Spot.Right });
               }
-              // and now remove the selected node itself
-              myDiagram.model.removeNodeData(node.data);
-              myDiagram.commitTransaction("reparent remove");
-            }
+            });
+          };
+
+          // this is used to determine feedback during drags
+          function mayWorkFor(node1, node2) {
+            if (!(node1 instanceof go.Node)) return false;  // must be a Node
+            if (node1 === node2) return false;  // cannot work for yourself
+            if (node2.isInTreeOf(node1)) return false;  // cannot work for someone who works for you
+            return true;
           }
-        }
-      ),
-      $("ContextMenuButton",
-        $(go.TextBlock, "Remove Department"),
-        {
-          click: (e, button) => {
-            // remove the whole subtree, including the node itself
-            const node = button.part.adornedPart;
-            if (node !== null) {
-              myDiagram.startTransaction("remove dept");
-              myDiagram.removeParts(node.findTreeParts());
-              myDiagram.commitTransaction("remove dept");
-            }
+
+          // This function provides a common style for most of the TextBlocks.
+          // Some of these values may be overridden in a particular TextBlock.
+          function textStyle() {
+            return { font: "9pt  Segoe UI,sans-serif", stroke: "white" };
           }
+
+          // This converter is used by the Picture.
+          function findHeadShot(pic) {
+            if (!pic) return "images/HSnopic.png"; // There are only 16 images on the server
+            return "images/HS" + pic;
+          }
+
+          // define the Node template
+          myDiagram.nodeTemplate =
+            $(go.Node, "Spot",
+              {
+                selectionObjectName: "BODY",
+                mouseEnter: (e, node) => node.findObject("BUTTON").opacity = node.findObject("BUTTONX").opacity = 1,
+                mouseLeave: (e, node) => node.findObject("BUTTON").opacity = node.findObject("BUTTONX").opacity = 0,
+                // handle dragging a Node onto a Node to (maybe) change the reporting relationship
+                mouseDragEnter: (e, node, prev) => {
+                  const diagram = node.diagram;
+                  const selnode = diagram.selection.first();
+                  if (!mayWorkFor(selnode, node)) return;
+                  const shape = node.findObject("SHAPE");
+                  if (shape) {
+                    shape._prevFill = shape.fill;  // remember the original brush
+                    shape.fill = "darkred";
+                  }
+                },
+                mouseDragLeave: (e, node, next) => {
+                  const shape = node.findObject("SHAPE");
+                  if (shape && shape._prevFill) {
+                    shape.fill = shape._prevFill;  // restore the original brush
+                  }
+                },
+                mouseDrop: (e, node) => {
+                  const diagram = node.diagram;
+                  const selnode = diagram.selection.first();  // assume just one Node in selection
+                  if (mayWorkFor(selnode, node)) {
+                    // find any existing link into the selected node
+                    const link = selnode.findTreeParentLink();
+                    if (link !== null) {  // reconnect any existing link
+                      link.fromNode = node;
+                    } else {  // else create a new link
+                      diagram.toolManager.linkingTool.insertLink(node, node.port, selnode, selnode.port);
+                    }
+                  }
+                }
+              },
+              // for sorting, have the Node.text be the data.name
+              new go.Binding("text", "name"),
+              // bind the Part.layerName to control the Node's layer depending on whether it isSelected
+              new go.Binding("layerName", "isSelected", sel => sel ? "Foreground" : "").ofObject(),
+              $(go.Panel, "Auto",
+                { name: "BODY" },
+                // define the node's outer shape
+                $(go.Shape, "Rectangle",
+                  { name: "SHAPE", fill: "#333333", stroke: 'white', strokeWidth: 3.5, portId: "" }),
+                $(go.Panel, "Horizontal",
+                  $(go.Picture,
+                    {
+                      name: "Picture",
+                      desiredSize: new go.Size(70, 70),
+                      margin: 1.5,
+                      source: "images/HSnopic.png"  // the default image
+                    },
+                    new go.Binding("source", "pic", findHeadShot)),
+                  // define the panel where the text will appear
+                  $(go.Panel, "Table",
+                    {
+                      minSize: new go.Size(130, NaN),
+                      maxSize: new go.Size(150, NaN),
+                      margin: new go.Margin(6, 10, 0, 6),
+                      defaultAlignment: go.Spot.Left
+                    },
+                    $(go.RowColumnDefinition, { column: 2, width: 4 }),
+                    $(go.TextBlock, textStyle(),  // the name
+                      {
+                        name: "NAMETB",
+                        row: 0, column: 0, columnSpan: 5,
+                        font: "12pt Segoe UI,sans-serif",
+                        editable: true, isMultiline: false,
+                        minSize: new go.Size(50, 16)
+                      },
+                      new go.Binding("text", "name").makeTwoWay()),
+                    $(go.TextBlock, "Title: ", textStyle(),
+                      { row: 1, column: 0 }),
+                    $(go.TextBlock, textStyle(),
+                      {
+                        row: 1, column: 1, columnSpan: 4,
+                        editable: true, isMultiline: false,
+                        minSize: new go.Size(50, 14),
+                        margin: new go.Margin(0, 0, 0, 3)
+                      },
+                      new go.Binding("text", "title").makeTwoWay()),
+                    $(go.TextBlock, textStyle(),
+                      { row: 2, column: 0 },
+                      new go.Binding("text", "key", v => "ID: " + v)),
+                    $(go.TextBlock, textStyle(),  // the comments
+                      {
+                        row: 3, column: 0, columnSpan: 5,
+                        font: "italic 9pt sans-serif",
+                        wrap: go.TextBlock.WrapFit,
+                        editable: true,  // by default newlines are allowed
+                        minSize: new go.Size(100, 14)
+                      },
+                      new go.Binding("text", "comments").makeTwoWay())
+                   ) // end Table Panel
+                 ) // end Horizontal Panel
+               ), // end Auto Panel
+              $("Button",
+                $(go.Shape, "PlusLine", { width: 10, height: 10 }),
+                {
+                  name: "BUTTON", alignment: go.Spot.Right, opacity: 0,  // initially not visible
+                  click: (e, button) => addEmployee(button.part)
+                },
+                // button is visible either when node is selected or on mouse-over
+                new go.Binding("opacity", "isSelected", s => s ? 1 : 0).ofObject()
+               ),
+              new go.Binding("isTreeExpanded").makeTwoWay(),
+              $("TreeExpanderButton",
+                {
+                  width: 60,
+                  height: 40,
+                  name: "BUTTONX", alignment: go.Spot.Bottom, opacity: 0,  // initially not visible
+                  "_treeExpandedFigure": "TriangleUp",
+                  "_treeCollapsedFigure": "TriangleDown"
+                },
+                // button is visible either when node is selected or on mouse-over
+                new go.Binding("opacity", "isSelected", s => s ? 1 : 0).ofObject()
+               )
+             );  // end Node, a Spot Panel
+
+          function addEmployee(node) {
+            if (!node) return;
+            const thisemp = node.data;
+            myDiagram.startTransaction("add employee");
+            const newemp = { name: "(new person)", title: "(title)", comments: "", parent: thisemp.key };
+            myDiagram.model.addNodeData(newemp);
+            const newnode = myDiagram.findNodeForData(newemp);
+            if (newnode) newnode.location = node.location;
+            myDiagram.commitTransaction("add employee");
+            myDiagram.commandHandler.scrollToPart(newnode);
+          }
+
+          // the context menu allows users to make a position vacant,
+          // remove a role and reassign the subtree, or remove a department
+          myDiagram.nodeTemplate.contextMenu =
+            $("ContextMenu",
+              $("ContextMenuButton",
+                $(go.TextBlock, "Add Employee"),
+                {
+                  click: (e, button) => addEmployee(button.part.adornedPart)
+                }
+               ),
+              $("ContextMenuButton",
+                $(go.TextBlock, "Vacate Position"),
+                {
+                  click: (e, button) => {
+                    const node = button.part.adornedPart;
+                    if (node !== null) {
+                      const thisemp = node.data;
+                      myDiagram.startTransaction("vacate");
+                      // update the key, name, picture, and comments, but leave the title
+                      myDiagram.model.setDataProperty(thisemp, "name", "(Vacant)");
+                      myDiagram.model.setDataProperty(thisemp, "pic", "");
+                      myDiagram.model.setDataProperty(thisemp, "comments", "");
+                      myDiagram.commitTransaction("vacate");
+                    }
+                  }
+                }
+               ),
+              $("ContextMenuButton",
+                $(go.TextBlock, "Remove Role"),
+                {
+                  click: (e, button) => {
+                    // reparent the subtree to this node's boss, then remove the node
+                    const node = button.part.adornedPart;
+                    if (node !== null) {
+                      myDiagram.startTransaction("reparent remove");
+                      const chl = node.findTreeChildrenNodes();
+                      // iterate through the children and set their parent key to our selected node's parent key
+                      while (chl.next()) {
+                        const emp = chl.value;
+                        myDiagram.model.setParentKeyForNodeData(emp.data, node.findTreeParentNode().data.key);
+                      }
+                      // and now remove the selected node itself
+                      myDiagram.model.removeNodeData(node.data);
+                      myDiagram.commitTransaction("reparent remove");
+                    }
+                  }
+                }
+               ),
+              $("ContextMenuButton",
+                $(go.TextBlock, "Remove Department"),
+                {
+                  click: (e, button) => {
+                    // remove the whole subtree, including the node itself
+                    const node = button.part.adornedPart;
+                    if (node !== null) {
+                      myDiagram.startTransaction("remove dept");
+                      myDiagram.removeParts(node.findTreeParts());
+                      myDiagram.commitTransaction("remove dept");
+                    }
+                  }
+                }
+               )
+             );
+
+          // define the Link template
+          myDiagram.linkTemplate =
+            $(go.Link, go.Link.Orthogonal,
+              { layerName: "Background", corner: 5 },
+              $(go.Shape, { strokeWidth: 1.5, stroke: "#F5F5F5" }));  // the link shape
+
+          // read in the JSON-format data from the "mySavedModel" element
+          load();
+
+
+          // support editing the properties of the selected person in HTML
+          if (window.Inspector) myInspector = new Inspector("myInspector", myDiagram,
+                                                            {
+                                                              properties: {
+                                                                "key": { readOnly: true },
+                                                                "comments": {}
+                                                              }
+                                                            });
+
+          // Setup zoom to fit button
+          document.getElementById('zoomToFit').addEventListener('click', () => myDiagram.commandHandler.zoomToFit());
+
+          document.getElementById('centerRoot').addEventListener('click', () => {
+            myDiagram.scale = 1;
+            myDiagram.commandHandler.scrollToPart(myDiagram.findNodeForKey(1));
+          });
+        } // end init
+
+
+        // Show the diagram's model in JSON format
+        function save() {
+          document.getElementById("mySavedModel").value = myDiagram.model.toJson();
+          myDiagram.isModified = false;
         }
-      )
-    );
+        function load() {
+          myDiagram.model = go.Model.fromJson(document.getElementById("mySavedModel").value);
+          // make sure new data keys are unique positive integers
+          let lastkey = 1;
+          
+          myDiagram.model.makeUniqueKeyFunction = (model, data) => {
+            let k = data.key || lastkey;
+            while (model.findNodeDataForKey(k)) k++;
+            data.key = lastkey = k;
+            return k;
+          };
+          myDiagram.commandHandler.zoomToFit()
+        }
 
-  // define the Link template
-  myDiagram.linkTemplate =
-    $(go.Link, go.Link.Orthogonal,
-      { layerName: "Background", corner: 5 },
-      $(go.Shape, { strokeWidth: 1.5, stroke: "#F5F5F5" }));  // the link shape
+        function collapseall(){
+          myDiagram.findTreeRoots().each(function(n) { n.collapseTree(); })
+          myDiagram.nodes.each(function(n) { n.wasTreeExpanded = false; })
+        }
 
-  // read in the JSON-format data from the "mySavedModel" element
-  load();
+        function expandall(){
+          myDiagram.findTreeRoots().each(function(n) { n.expandTree(); })
+        }
+        
+        window.addEventListener('DOMContentLoaded', init);
+      </script>
 
+      <div id="sample">
+        <div id="myDiagramDiv" style="background-color: rgb(52, 52, 60); border: 1px solid black; height: 100vh; position: relative; -webkit-tap-highlight-color: rgba(255, 255, 255, 0); cursor: auto; font: 12pt &quot;Segoe UI&quot;, sans-serif;"><canvas tabindex="0" width="1054" height="553" style="position: absolute; top: 0px; left: 0px; z-index: 2; user-select: none; touch-action: none; width: 1054px; height: 553px; cursor: auto;">This text is displayed if your browser does not support the Canvas HTML element.</canvas><div style="position: absolute; overflow: auto; width: 1054px; height: 568px; z-index: 1;"><div style="position: absolute; width: 3108.86px; height: 1px;"></div></div></div>
+        <div>
+          <div id="myInspector" class="inspector"><table><tbody><tr><td>key</td><td><input type="undefined" tabindex="0" disabled=""></td></tr><tr><td>comments</td><td><input type="undefined" tabindex="1"></td></tr><tr><td>name</td><td><input tabindex="2"></td></tr><tr><td>title</td><td><input tabindex="3"></td></tr><tr><td>parent</td><td><input tabindex="4"></td></tr></tbody></table></div>
+        </div>
+        <p>
+          <button id="zoomToFit">Zoom to Fit</button>
+          <button id="centerRoot">Center on root</button>
+          <button id="CollapseAll" onclick="collapseall()" >Collapse all</button>
+          <button id="ExpandAll" onclick="expandall()">Expand all</button>
+        </p>
+        <div>
+          <div style="display:none;">
+            <button id="SaveButton" onclick="save()" disabled="">Save</button>
+            <button onclick="load()">Load</button>
+            Diagram Model saved in JSON format:
+          </div>
+          <textarea id="mySavedModel" style="width:100%; height:270px;display:none;">
 
-  // support editing the properties of the selected person in HTML
-  if (window.Inspector) myInspector = new Inspector("myInspector", myDiagram,
-    {
-      properties: {
-        "key": { readOnly: true },
-        "comments": {}
-      }
-    });
-
-  // Setup zoom to fit button
-  document.getElementById('zoomToFit').addEventListener('click', () => myDiagram.commandHandler.zoomToFit());
-
-  document.getElementById('centerRoot').addEventListener('click', () => {
-    myDiagram.scale = 1;
-    myDiagram.commandHandler.scrollToPart(myDiagram.findNodeForKey(1));
-  });
-} // end init
-
-
-// Show the diagram's model in JSON format
-function save() {
-  document.getElementById("mySavedModel").value = myDiagram.model.toJson();
-  myDiagram.isModified = false;
-}
-function load() {
-  myDiagram.model = go.Model.fromJson(document.getElementById("mySavedModel").value);
-  // make sure new data keys are unique positive integers
-  let lastkey = 1;
-  
-  myDiagram.model.makeUniqueKeyFunction = (model, data) => {
-    let k = data.key || lastkey;
-    while (model.findNodeDataForKey(k)) k++;
-    data.key = lastkey = k;
-    return k;
-  };
-  myDiagram.commandHandler.zoomToFit()
-}
-
-    function collapseall(){
-      myDiagram.findTreeRoots().each(function(n) { n.collapseTree(); })
-      myDiagram.nodes.each(function(n) { n.wasTreeExpanded = false; })
-    }
-
-    function expandall(){
-      myDiagram.findTreeRoots().each(function(n) { n.expandTree(); })
-    }
-    
-window.addEventListener('DOMContentLoaded', init);
-  </script>
-
-<div id="sample">
-  <div id="myDiagramDiv" style="background-color: rgb(52, 52, 60); border: 1px solid black; height: 100vh; position: relative; -webkit-tap-highlight-color: rgba(255, 255, 255, 0); cursor: auto; font: 12pt &quot;Segoe UI&quot;, sans-serif;"><canvas tabindex="0" width="1054" height="553" style="position: absolute; top: 0px; left: 0px; z-index: 2; user-select: none; touch-action: none; width: 1054px; height: 553px; cursor: auto;">This text is displayed if your browser does not support the Canvas HTML element.</canvas><div style="position: absolute; overflow: auto; width: 1054px; height: 568px; z-index: 1;"><div style="position: absolute; width: 3108.86px; height: 1px;"></div></div></div>
-  <div>
-    <div id="myInspector" class="inspector"><table><tbody><tr><td>key</td><td><input type="undefined" tabindex="0" disabled=""></td></tr><tr><td>comments</td><td><input type="undefined" tabindex="1"></td></tr><tr><td>name</td><td><input tabindex="2"></td></tr><tr><td>title</td><td><input tabindex="3"></td></tr><tr><td>parent</td><td><input tabindex="4"></td></tr></tbody></table></div>
-  </div>
-  <p>
-    <button id="zoomToFit">Zoom to Fit</button>
-    <button id="centerRoot">Center on root</button>
-    <button id="CollapseAll" onclick="collapseall()" >Collapse all</button>
-    <button id="ExpandAll" onclick="expandall()">Expand all</button>
-  </p>
-  <div>
-    <div style="display:none;">
-      <button id="SaveButton" onclick="save()" disabled="">Save</button>
-      <button onclick="load()">Load</button>
-      Diagram Model saved in JSON format:
-    </div>
-    <textarea id="mySavedModel" style="width:100%; height:270px;display:none;">
-
-{ "class": "TreeModel",
-  "nodeDataArray": [
-{"name":"Root","title":"","comments":"","key":1},
-{"name":"Root2","title":"(title)","comments":"","parent":1,"key":2},
-{"name":"Ishwari prasad","title":"(title)","comments":"","parent":2,"key":3},
-{"name":"Dwarka prasad","title":"(title)","comments":"","parent":3,"key":4,"isTreeExpanded":true},
-{"name":"Radha Raman Kulshreshtha","title":"(title)","comments":"","parent":4,"key":5,"isTreeExpanded":true},
-{"name":"Gyanendra Prakash Kulshreshtha","title":"(title)","comments":"","parent":5,"key":6,"isTreeExpanded":true},
-{"name":"Arvind Prakash Kulshreshtha","title":"(title)","comments":"","parent":5,"key":7,"isTreeExpanded":true},
-{"name":"Hamendra kumar kulshreshtha","title":"(title)","comments":"","parent":5,"key":8,"isTreeExpanded":true},
-{"name":"Munmum","title":"(title)","comments":"","parent":5,"key":9,"isTreeExpanded":true},
-{"name":"Babli","title":"(title)","comments":"","parent":5,"key":10,"isTreeExpanded":true},
-{"name":"Ashu ","title":"(title)","comments":"","parent":6,"key":11,"isTreeExpanded":true},
-{"name":"Nishu","title":"(title)","comments":"","parent":6,"key":12,"isTreeExpanded":true},
-{"name":"Neelu","title":"(title)","comments":"","parent":6,"key":13,"isTreeExpanded":true},
-{"name":"Shitanshu/Kishu Kulshreshtha","title":"(title)","comments":"","parent":7,"key":14,"isTreeExpanded":true},
-{"name":"Pallav kulshreshtha","title":"(title)","comments":"","parent":7,"key":15,"isTreeExpanded":true},
-{"name":"Pankhuri kulshreshtha","title":"(title)","comments":"","parent":8,"key":16,"isTreeExpanded":true},
-{"name":"Palash Kulshreshtha","title":"(title)","comments":"","parent":8,"key":17,"isTreeExpanded":true},
-{"name":"Yukti","title":"(title)","comments":"","parent":9,"key":18,"isTreeExpanded":true},
-{"name":"Aditi","title":"(title)","comments":"","parent":9,"key":19,"isTreeExpanded":true},
-{"name":"Tonu","title":"(title)","comments":"","parent":10,"key":20,"isTreeExpanded":true},
-{"name":"Shipra","title":"(title)","comments":"","parent":10,"key":21,"isTreeExpanded":true},
-{"name":"Mahesh","title":"(title)","comments":"","parent":4,"key":22,"isTreeExpanded":true},
-{"name":"Jinesh","title":"(title)","comments":"","parent":4,"key":23,"isTreeExpanded":false},
-{"name":"Shailesh","title":"(title)","comments":"","parent":4,"key":24,"isTreeExpanded":false},
-{"name":"Gudoo","title":"(title)","comments":"","parent":22,"key":25,"isTreeExpanded":true},
-{"name":"Jainyu kulshreshtha","title":"(title)","comments":"","parent":23,"key":26,"isTreeExpanded":false},
-{"name":"Gudiya","title":"(title)","comments":"","parent":22,"key":27,"isTreeExpanded":true},
-{"name":"Pranshu Kulshreshtha","title":"(title)","comments":"","parent":24,"key":28,"isTreeExpanded":false},
-{"name":"Pranchi Kulshreshtha","title":"(title)","comments":"","parent":24,"key":29,"isTreeExpanded":false},
-{"name":"Krishna","title":"(title)","comments":"","parent":25,"key":30,"isTreeExpanded":true},
-{"name":"Anushree","title":"(title)","comments":"","parent":25,"key":31,"isTreeExpanded":true},
-{"name":"Aadvik","title":"(title)","comments":"","parent":14,"key":32,"isTreeExpanded":true},
-{"name":"Rudransh","title":"(title)","comments":"","parent":12,"key":33,"isTreeExpanded":true},
-{"name":"Shree","title":"(title)","comments":"","parent":12,"key":34,"isTreeExpanded":true},
-{"name":"Kushagra","title":"(title)","comments":"","parent":11,"key":35,"isTreeExpanded":true},
-{"name":"Deva","title":"(title)","comments":"","parent":11,"key":36,"isTreeExpanded":true},
-{"name":"Tia","title":"(title)","comments":"","parent":16,"key":37,"isTreeExpanded":true},
-{"name":"Onkar prasad","title":"(title)","comments":"","parent":4,"key":38,"isTreeExpanded":true},
-{"name":"Deepak","title":"(title)","comments":"","parent":38,"key":39,"isTreeExpanded":true},
-{"name":"Karuna","title":"(title)","comments":"","parent":38,"key":40,"isTreeExpanded":true},
-{"name":"Saroj","title":"(title)","comments":"","parent":4,"key":41,"isTreeExpanded":false},
-{"name":"Vinod","title":"(title)","comments":"","parent":4,"key":42,"isTreeExpanded":true},
-{"name":"Karishma/Cheenu","title":"(title)","comments":"","parent":41,"key":43,"isTreeExpanded":false},
-{"name":"Ayansh","title":"(title)","comments":"","parent":18,"key":44,"isTreeExpanded":true},
-{"name":"Kedar nath","title":"(title)","comments":"","parent":4,"key":45,"isTreeExpanded":true},
-{"name":"omkumari","title":"(title)","comments":"","parent":4,"key":46,"isTreeExpanded":true},
-{"name":"Anil Kulshreshtha","title":"(title)","comments":"","parent":46,"key":47,"isTreeExpanded":true},
-{"name":"Late Arun","title":"(title)","comments":"","parent":46,"key":48,"isTreeExpanded":true},
-{"name":"Late Shashi","title":"(title)","comments":"","parent":46,"key":49,"isTreeExpanded":true},
-{"name":"Late Satendra","title":"(title)","comments":"","parent":45,"key":50,"isTreeExpanded":true},
-{"name":"Yatendra","title":"(title)","comments":"","parent":45,"key":51,"isTreeExpanded":true},
-{"name":"Rajesh","title":"(title)","comments":"","parent":45,"key":52,"isTreeExpanded":true},
-{"name":"Sukesh","title":"(title)","comments":"","parent":45,"key":53,"isTreeExpanded":true},
-{"name":"Subodh","title":"(title)","comments":"","parent":45,"key":54,"isTreeExpanded":true},
-{"name":"Achal","title":"(title)","comments":"","parent":42,"key":55,"isTreeExpanded":true},
-{"name":"Dimpy","title":"(title)","comments":"","parent":42,"key":56,"isTreeExpanded":true},
-{"name":"Pranav","title":"(title)","comments":"","parent":39,"key":57,"isTreeExpanded":true},
-{"name":"??","title":"(title)","comments":"","parent":39,"key":58,"isTreeExpanded":true},
-{"name":"Kanika","title":"(title)","comments":"","parent":40,"key":59,"isTreeExpanded":true},
-{"name":"Neha","title":"(title)","comments":"","parent":40,"key":60,"isTreeExpanded":true},
-{"name":"Amit Kulshreshtha","title":"(title)","comments":"","parent":50,"key":61,"isTreeExpanded":true},
-{"name":"Ashish Kulshreshtha","title":"(title)","comments":"","parent":50,"key":62,"isTreeExpanded":true},
-{"name":"Archana/Neetu","title":"(title)","comments":"","parent":50,"key":63,"isTreeExpanded":true},
-{"name":"Gudiya/Nidhi","title":"(title)","comments":"","parent":50,"key":64,"isTreeExpanded":true},
-{"name":"Anjana/Baby","title":"(title)","comments":"","parent":50,"key":65,"isTreeExpanded":true},
-{"name":"Lucky","title":"(title)","comments":"","parent":51,"key":66,"isTreeExpanded":true},
-{"name":"Vikrant/Nikki","title":"(title)","comments":"","parent":51,"key":67,"isTreeExpanded":true},
-{"name":"Nishant","title":"(title)","comments":"","parent":51,"key":68,"isTreeExpanded":true},
-{"name":"Shubham","title":"(title)","comments":"","parent":52,"key":69,"isTreeExpanded":true},
-{"name":"Ruchi","title":"(title)","comments":"","parent":52,"key":70,"isTreeExpanded":true},
-{"name":"Rashmi","title":"(title)","comments":"","parent":52,"key":71,"isTreeExpanded":true},
-{"name":"Sonu/Aishwarya Mohan","title":"(title)","comments":"","parent":53,"key":72,"isTreeExpanded":true},
-{"name":"Gudiya","title":"(title)","comments":"","parent":53,"key":73,"isTreeExpanded":true},
-{"name":"Late Annu","title":"(title)","comments":"","parent":53,"key":74,"isTreeExpanded":true},
-{"name":"Richa","title":"(title)","comments":"","parent":54,"key":75,"isTreeExpanded":true},
-{"name":"Gunjan","title":"(title)","comments":"","parent":54,"key":76,"isTreeExpanded":true},
-{"name":"Monu/Himanshu","title":"(title)","comments":"","parent":54,"key":77,"isTreeExpanded":true},
-{"name":"Palak","title":"(title)","comments":"","parent":61,"key":78,"isTreeExpanded":true},
-{"name":"??","title":"(title)","comments":"","parent":61,"key":79,"isTreeExpanded":true},
-{"name":"Late monu","title":"(title)","comments":"","parent":10,"key":80,"isTreeExpanded":true},
-{"name":"Vansh","title":"(title)","comments":"","parent":13,"key":81,"isTreeExpanded":true},
-{"name":"Meethi","title":"(title)","comments":"","parent":13,"key":82,"isTreeExpanded":true},
-{"name":"Arika","title":"(title)","comments":"","parent":18,"key":83,"isTreeExpanded":true},
-{"name":"Mathura prasad","title":"(title)","comments":"","parent":3,"key":84},
-{"name":"late Baijnath","title":"(title)","comments":"","parent":84,"key":85},
-{"name":"Shadilal","title":"(title)","comments":"","parent":84,"key":86,"isTreeExpanded":true},
-{"name":"Bramhashankar","title":"(title)","comments":"","parent":84,"key":87},
-{"name":"Vishwaprabha","title":"(title)","comments":"","parent":85,"key":88},
-{"name":"Ashok","title":"(title)","comments":"","parent":86,"key":89,"isTreeExpanded":true},
-{"name":"Hridesh","title":"(title)","comments":"","parent":86,"key":90,"isTreeExpanded":true},
-{"name":"Rakesh","title":"(title)","comments":"","parent":86,"key":91,"isTreeExpanded":true},
-{"name":"Ajay/Guddan","title":"(title)","comments":"","parent":86,"key":92,"isTreeExpanded":true},
-{"name":"Vinay","title":"(title)","comments":"","parent":86,"key":93,"isTreeExpanded":true},
-{"name":"Babboo","title":"(title)","comments":"","parent":86,"key":94,"isTreeExpanded":true},
-{"name":"Bhaiya","title":"(title)","comments":"","parent":86,"key":95,"isTreeExpanded":true},
-{"name":"Rani","title":"(title)","comments":"","parent":86,"key":96,"isTreeExpanded":true},
-{"name":"Nishant","title":"(title)","comments":"","parent":89,"key":97,"isTreeExpanded":true},
-{"name":"Nidhi","title":"(title)","comments":"","parent":89,"key":98,"isTreeExpanded":true},
-{"name":"Shobhit","title":"(title)","comments":"","parent":90,"key":99,"isTreeExpanded":true},
-{"name":"Saurabh","title":"(title)","comments":"","parent":90,"key":100,"isTreeExpanded":true},
-{"name":"Ankit","title":"(title)","comments":"","parent":91,"key":101,"isTreeExpanded":true},
-{"name":"Aditya kumar","title":"(title)","comments":"","parent":87,"key":102},
-{"name":"Alka","title":"(title)","comments":"","parent":87,"key":103},
-{"name":"Nihit","title":"(title)","comments":"","parent":102,"key":104},
-{"name":"Vihit","title":"(title)","comments":"","parent":102,"key":105},
-{"name":"Apoorva","title":"(title)","comments":"","parent":103,"key":106},
-{"name":"Astha","title":"(title)","comments":"","parent":103,"key":107},
-{"name":"Rahul/Chintu","title":"(title)","comments":"","parent":88,"key":108},
-{"name":"Sandeep/mintu","title":"(title)","comments":"","parent":88,"key":109},
-{"name":"Ruby/Shweta","title":"(title)","comments":"","parent":88,"key":110},
-{"name":"Suby/chitra","title":"(title)","comments":"","parent":88,"key":111},
-{"name":"Khuby/Shilpi","title":"(title)","comments":"","parent":88,"key":112},
-{"name":"Vansh","title":"(title)","comments":"","parent":21,"key":113},
-{"name":"Sumira","title":"(title)","comments":"","parent":20,"key":114},
-{"name":"Sumaira","title":"(title)","comments":"","parent":20,"key":115},
-{"name":"Shivi","title":"(title)","comments":"","parent":21,"key":116},
-{"name":"Rachit","title":"(title)","comments":"","parent":91,"key":117},
-{"name":"Astha","title":"(title)","comments":"","parent":92,"key":118},
-{"name":"??","title":"(title)","comments":"","parent":92,"key":119},
-{"name":"Tanu","title":"(title)","comments":"","parent":27,"key":120}
-]}      
-    </textarea>
-  </div>
-</div>
+            { "class": "TreeModel",
+            "nodeDataArray": [
+            {"name":"Root","title":"","comments":"","key":1},
+            {"name":"Root2","title":"(title)","comments":"","parent":1,"key":2},
+            {"name":"Ishwari prasad","title":"(title)","comments":"","parent":2,"key":3},
+            {"name":"Dwarka prasad","title":"(title)","comments":"","parent":3,"key":4,"isTreeExpanded":true},
+            {"name":"Radha Raman Kulshreshtha","title":"(title)","comments":"","parent":4,"key":5,"isTreeExpanded":true},
+            {"name":"Gyanendra Prakash Kulshreshtha","title":"(title)","comments":"","parent":5,"key":6,"isTreeExpanded":true},
+            {"name":"Arvind Prakash Kulshreshtha","title":"(title)","comments":"","parent":5,"key":7,"isTreeExpanded":true},
+            {"name":"Hamendra kumar kulshreshtha","title":"(title)","comments":"","parent":5,"key":8,"isTreeExpanded":true},
+            {"name":"Munmum","title":"(title)","comments":"","parent":5,"key":9,"isTreeExpanded":true},
+            {"name":"Babli","title":"(title)","comments":"","parent":5,"key":10,"isTreeExpanded":true},
+            {"name":"Ashu ","title":"(title)","comments":"","parent":6,"key":11,"isTreeExpanded":true},
+            {"name":"Nishu","title":"(title)","comments":"","parent":6,"key":12,"isTreeExpanded":true},
+            {"name":"Neelu","title":"(title)","comments":"","parent":6,"key":13,"isTreeExpanded":true},
+            {"name":"Shitanshu/Kishu Kulshreshtha","title":"(title)","comments":"","parent":7,"key":14,"isTreeExpanded":true},
+            {"name":"Pallav kulshreshtha","title":"(title)","comments":"","parent":7,"key":15,"isTreeExpanded":true},
+            {"name":"Pankhuri kulshreshtha","title":"(title)","comments":"","parent":8,"key":16,"isTreeExpanded":true},
+            {"name":"Palash Kulshreshtha","title":"(title)","comments":"","parent":8,"key":17,"isTreeExpanded":true},
+            {"name":"Yukti","title":"(title)","comments":"","parent":9,"key":18,"isTreeExpanded":true},
+            {"name":"Aditi","title":"(title)","comments":"","parent":9,"key":19,"isTreeExpanded":true},
+            {"name":"Tonu","title":"(title)","comments":"","parent":10,"key":20,"isTreeExpanded":true},
+            {"name":"Shipra","title":"(title)","comments":"","parent":10,"key":21,"isTreeExpanded":true},
+            {"name":"Mahesh","title":"(title)","comments":"","parent":4,"key":22,"isTreeExpanded":true},
+            {"name":"Jinesh","title":"(title)","comments":"","parent":4,"key":23,"isTreeExpanded":false},
+            {"name":"Shailesh","title":"(title)","comments":"","parent":4,"key":24,"isTreeExpanded":false},
+            {"name":"Gudoo","title":"(title)","comments":"","parent":22,"key":25,"isTreeExpanded":true},
+            {"name":"Jainyu kulshreshtha","title":"(title)","comments":"","parent":23,"key":26,"isTreeExpanded":false},
+            {"name":"Gudiya","title":"(title)","comments":"","parent":22,"key":27,"isTreeExpanded":true},
+            {"name":"Pranshu Kulshreshtha","title":"(title)","comments":"","parent":24,"key":28,"isTreeExpanded":false},
+            {"name":"Pranchi Kulshreshtha","title":"(title)","comments":"","parent":24,"key":29,"isTreeExpanded":false},
+            {"name":"Krishna","title":"(title)","comments":"","parent":25,"key":30,"isTreeExpanded":true},
+            {"name":"Anushree","title":"(title)","comments":"","parent":25,"key":31,"isTreeExpanded":true},
+            {"name":"Aadvik","title":"(title)","comments":"","parent":14,"key":32,"isTreeExpanded":true},
+            {"name":"Rudransh","title":"(title)","comments":"","parent":12,"key":33,"isTreeExpanded":true},
+            {"name":"Shree","title":"(title)","comments":"","parent":12,"key":34,"isTreeExpanded":true},
+            {"name":"Kushagra","title":"(title)","comments":"","parent":11,"key":35,"isTreeExpanded":true},
+            {"name":"Deva","title":"(title)","comments":"","parent":11,"key":36,"isTreeExpanded":true},
+            {"name":"Tia","title":"(title)","comments":"","parent":16,"key":37,"isTreeExpanded":true},
+            {"name":"Onkar prasad","title":"(title)","comments":"","parent":4,"key":38,"isTreeExpanded":true},
+            {"name":"Deepak","title":"(title)","comments":"","parent":38,"key":39,"isTreeExpanded":true},
+            {"name":"Karuna","title":"(title)","comments":"","parent":38,"key":40,"isTreeExpanded":true},
+            {"name":"Saroj","title":"(title)","comments":"","parent":4,"key":41,"isTreeExpanded":false},
+            {"name":"Vinod","title":"(title)","comments":"","parent":4,"key":42,"isTreeExpanded":true},
+            {"name":"Karishma/Cheenu","title":"(title)","comments":"","parent":41,"key":43,"isTreeExpanded":false},
+            {"name":"Ayansh","title":"(title)","comments":"","parent":18,"key":44,"isTreeExpanded":true},
+            {"name":"Kedar nath","title":"(title)","comments":"","parent":4,"key":45,"isTreeExpanded":true},
+            {"name":"omkumari","title":"(title)","comments":"","parent":4,"key":46,"isTreeExpanded":true},
+            {"name":"Anil Kulshreshtha","title":"(title)","comments":"","parent":46,"key":47,"isTreeExpanded":true},
+            {"name":"Late Arun","title":"(title)","comments":"","parent":46,"key":48,"isTreeExpanded":true},
+            {"name":"Late Shashi","title":"(title)","comments":"","parent":46,"key":49,"isTreeExpanded":true},
+            {"name":"Late Satendra","title":"(title)","comments":"","parent":45,"key":50,"isTreeExpanded":true},
+            {"name":"Yatendra","title":"(title)","comments":"","parent":45,"key":51,"isTreeExpanded":true},
+            {"name":"Rajesh","title":"(title)","comments":"","parent":45,"key":52,"isTreeExpanded":true},
+            {"name":"Sukesh","title":"(title)","comments":"","parent":45,"key":53,"isTreeExpanded":true},
+            {"name":"Subodh","title":"(title)","comments":"","parent":45,"key":54,"isTreeExpanded":true},
+            {"name":"Achal","title":"(title)","comments":"","parent":42,"key":55,"isTreeExpanded":true},
+            {"name":"Dimpy","title":"(title)","comments":"","parent":42,"key":56,"isTreeExpanded":true},
+            {"name":"Pranav","title":"(title)","comments":"","parent":39,"key":57,"isTreeExpanded":true},
+            {"name":"??","title":"(title)","comments":"","parent":39,"key":58,"isTreeExpanded":true},
+            {"name":"Kanika","title":"(title)","comments":"","parent":40,"key":59,"isTreeExpanded":true},
+            {"name":"Neha","title":"(title)","comments":"","parent":40,"key":60,"isTreeExpanded":true},
+            {"name":"Amit Kulshreshtha","title":"(title)","comments":"","parent":50,"key":61,"isTreeExpanded":true},
+            {"name":"Ashish Kulshreshtha","title":"(title)","comments":"","parent":50,"key":62,"isTreeExpanded":true},
+            {"name":"Archana/Neetu","title":"(title)","comments":"","parent":50,"key":63,"isTreeExpanded":true},
+            {"name":"Gudiya/Nidhi","title":"(title)","comments":"","parent":50,"key":64,"isTreeExpanded":true},
+            {"name":"Anjana/Baby","title":"(title)","comments":"","parent":50,"key":65,"isTreeExpanded":true},
+            {"name":"Lucky","title":"(title)","comments":"","parent":51,"key":66,"isTreeExpanded":true},
+            {"name":"Vikrant/Nikki","title":"(title)","comments":"","parent":51,"key":67,"isTreeExpanded":true},
+            {"name":"Nishant","title":"(title)","comments":"","parent":51,"key":68,"isTreeExpanded":true},
+            {"name":"Shubham","title":"(title)","comments":"","parent":52,"key":69,"isTreeExpanded":true},
+            {"name":"Ruchi","title":"(title)","comments":"","parent":52,"key":70,"isTreeExpanded":true},
+            {"name":"Rashmi","title":"(title)","comments":"","parent":52,"key":71,"isTreeExpanded":true},
+            {"name":"Sonu/Aishwarya Mohan","title":"(title)","comments":"","parent":53,"key":72,"isTreeExpanded":true},
+            {"name":"Gudiya","title":"(title)","comments":"","parent":53,"key":73,"isTreeExpanded":true},
+            {"name":"Late Annu","title":"(title)","comments":"","parent":53,"key":74,"isTreeExpanded":true},
+            {"name":"Richa","title":"(title)","comments":"","parent":54,"key":75,"isTreeExpanded":true},
+            {"name":"Gunjan","title":"(title)","comments":"","parent":54,"key":76,"isTreeExpanded":true},
+            {"name":"Monu/Himanshu","title":"(title)","comments":"","parent":54,"key":77,"isTreeExpanded":true},
+            {"name":"Palak","title":"(title)","comments":"","parent":61,"key":78,"isTreeExpanded":true},
+            {"name":"??","title":"(title)","comments":"","parent":61,"key":79,"isTreeExpanded":true},
+            {"name":"Late monu","title":"(title)","comments":"","parent":10,"key":80,"isTreeExpanded":true},
+            {"name":"Vansh","title":"(title)","comments":"","parent":13,"key":81,"isTreeExpanded":true},
+            {"name":"Meethi","title":"(title)","comments":"","parent":13,"key":82,"isTreeExpanded":true},
+            {"name":"Arika","title":"(title)","comments":"","parent":18,"key":83,"isTreeExpanded":true},
+            {"name":"Mathura prasad","title":"(title)","comments":"","parent":3,"key":84},
+            {"name":"late Baijnath","title":"(title)","comments":"","parent":84,"key":85},
+            {"name":"Shadilal","title":"(title)","comments":"","parent":84,"key":86,"isTreeExpanded":true},
+            {"name":"Bramhashankar","title":"(title)","comments":"","parent":84,"key":87},
+            {"name":"Vishwaprabha","title":"(title)","comments":"","parent":85,"key":88},
+            {"name":"Ashok","title":"(title)","comments":"","parent":86,"key":89,"isTreeExpanded":true},
+            {"name":"Hridesh","title":"(title)","comments":"","parent":86,"key":90,"isTreeExpanded":true},
+            {"name":"Rakesh","title":"(title)","comments":"","parent":86,"key":91,"isTreeExpanded":true},
+            {"name":"Ajay/Guddan","title":"(title)","comments":"","parent":86,"key":92,"isTreeExpanded":true},
+            {"name":"Vinay","title":"(title)","comments":"","parent":86,"key":93,"isTreeExpanded":true},
+            {"name":"Babboo","title":"(title)","comments":"","parent":86,"key":94,"isTreeExpanded":true},
+            {"name":"Bhaiya","title":"(title)","comments":"","parent":86,"key":95,"isTreeExpanded":true},
+            {"name":"Rani","title":"(title)","comments":"","parent":86,"key":96,"isTreeExpanded":true},
+            {"name":"Nishant","title":"(title)","comments":"","parent":89,"key":97,"isTreeExpanded":true},
+            {"name":"Nidhi","title":"(title)","comments":"","parent":89,"key":98,"isTreeExpanded":true},
+            {"name":"Shobhit","title":"(title)","comments":"","parent":90,"key":99,"isTreeExpanded":true},
+            {"name":"Saurabh","title":"(title)","comments":"","parent":90,"key":100,"isTreeExpanded":true},
+            {"name":"Ankit","title":"(title)","comments":"","parent":91,"key":101,"isTreeExpanded":true},
+            {"name":"Aditya kumar","title":"(title)","comments":"","parent":87,"key":102},
+            {"name":"Alka","title":"(title)","comments":"","parent":87,"key":103},
+            {"name":"Nihit","title":"(title)","comments":"","parent":102,"key":104},
+            {"name":"Vihit","title":"(title)","comments":"","parent":102,"key":105},
+            {"name":"Apoorva","title":"(title)","comments":"","parent":103,"key":106},
+            {"name":"Astha","title":"(title)","comments":"","parent":103,"key":107},
+            {"name":"Rahul/Chintu","title":"(title)","comments":"","parent":88,"key":108},
+            {"name":"Sandeep/mintu","title":"(title)","comments":"","parent":88,"key":109},
+            {"name":"Ruby/Shweta","title":"(title)","comments":"","parent":88,"key":110},
+            {"name":"Suby/chitra","title":"(title)","comments":"","parent":88,"key":111},
+            {"name":"Khuby/Shilpi","title":"(title)","comments":"","parent":88,"key":112},
+            {"name":"Vansh","title":"(title)","comments":"","parent":21,"key":113},
+            {"name":"Sumira","title":"(title)","comments":"","parent":20,"key":114},
+            {"name":"Sumaira","title":"(title)","comments":"","parent":20,"key":115},
+            {"name":"Shivi","title":"(title)","comments":"","parent":21,"key":116},
+            {"name":"Rachit","title":"(title)","comments":"","parent":91,"key":117},
+            {"name":"Astha","title":"(title)","comments":"","parent":92,"key":118},
+            {"name":"??","title":"(title)","comments":"","parent":92,"key":119},
+            {"name":"Tanu","title":"(title)","comments":"","parent":27,"key":120}
+            ]}      
+          </textarea>
+        </div>
+      </div>
   </body>
-  </html>
+</html>
