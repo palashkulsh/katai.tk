@@ -341,12 +341,14 @@ function load() {
   myDiagram.model = go.Model.fromJson(document.getElementById("mySavedModel").value);
   // make sure new data keys are unique positive integers
   let lastkey = 1;
+  
   myDiagram.model.makeUniqueKeyFunction = (model, data) => {
     let k = data.key || lastkey;
     while (model.findNodeDataForKey(k)) k++;
     data.key = lastkey = k;
     return k;
   };
+  myDiagram.commandHandler.zoomToFit()
 }
 
 window.addEventListener('DOMContentLoaded', init);
