@@ -105,7 +105,7 @@
           // This converter is used by the Picture.
           function findHeadShot(pic) {
             if (!pic) return "images/HSnopic.png"; // There are only 16 images on the server
-            return "images/HS" + pic;
+            return "images/" + pic;
           }
 
           // define the Node template
@@ -397,7 +397,6 @@
             Diagram Model saved in JSON format:
           </div>
           <textarea id="mySavedModel" style="width:100%; height:270px;;">
-
 { "class": "TreeModel",
   "nodeDataArray": [
 {"name":"Deepchand","title":"","comments":"","key":1},
@@ -405,7 +404,7 @@
 {"name":"Ishwari prasad","title":"(title)","comments":"","parent":2,"key":3,"isTreeExpanded":true},
 {"name":"Dwarka prasad","title":"(title)","comments":"","parent":3,"key":4,"isTreeExpanded":true,"spouse":" Charan devi + shanti devi"},
 {"name":"Radha Raman Kulshreshtha","title":"(title)","comments":"","spouse":"Shastri devi","parent":4,"key":5,"isTreeExpanded":true},
-{"name":"Gyanendra Prakash Kulshreshtha","title":"(title)","comments":"","parent":5,"key":6,"isTreeExpanded":true,"spouse":" Geeta"},
+{"name":"Gyanendra Prakash Kulshreshtha","title":"(title)","pic":"gyanendra_prakash.jpg","comments":"","parent":5,"key":6,"isTreeExpanded":true,"spouse":" Geeta"},
 {"name":"Arvind Prakash Kulshreshtha","title":"(title)","comments":"","parent":5,"key":7,"isTreeExpanded":true,"spouse":"Deepti"},
 {"name":"Hamendra kumar kulshreshtha","title":"(title)","comments":"","parent":5,"key":8,"isTreeExpanded":true,"spouse":"Bina"},
 {"name":"Munmum","title":"(title)","comments":"","parent":5,"key":9,"isTreeExpanded":true,"spouse":"Rajeev"},
@@ -423,12 +422,12 @@
 {"name":"Shipra","title":"(title)","comments":"","parent":10,"key":21,"isTreeExpanded":true,"spouse":"Vishal"},
 {"name":"Mahesh","title":"(title)","comments":"","parent":4,"key":22,"isTreeExpanded":true,"spouse":"Sarvesh"},
 {"name":"Jinesh","title":"(title)","comments":"","parent":4,"key":23,"isTreeExpanded":false,"spouse":"Kalpana"},
-{"name":"Shailesh","title":"(title)","comments":"","parent":4,"key":24,"isTreeExpanded":false,"spouse":"Neelam"},
+{"name":"Shailesh","title":"(title)","comments":"","parent":4,"key":24,"isTreeExpanded":true,"spouse":"Neelam"},
 {"name":"Gudoo/ Arvind","title":"(title)","comments":"","parent":22,"key":25,"isTreeExpanded":true,"spouse":"Shalini"},
 {"name":"Jainyu kulshreshtha","title":"(title)","comments":"","parent":23,"key":26,"isTreeExpanded":false},
 {"name":"Gudiya","title":"(title)","comments":"","parent":22,"key":27,"isTreeExpanded":true,"spouse":"Yogendra jain"},
-{"name":"Pranshu Kulshreshtha","title":"(title)","comments":"","parent":24,"key":28,"isTreeExpanded":false},
-{"name":"Pranchi Kulshreshtha","title":"(title)","comments":"","parent":24,"key":29,"isTreeExpanded":false},
+{"name":"Pranshu Kulshreshtha","title":"(title)","comments":"","parent":24,"key":28,"isTreeExpanded":false,"spouse":"Poorva"},
+{"name":"Pranchi Kulshreshtha","title":"(title)","comments":"","parent":24,"key":29,"isTreeExpanded":false,"spouse":"Ayush"},
 {"name":"Krishna","title":"(title)","comments":"","parent":25,"key":30,"isTreeExpanded":true},
 {"name":"Anushree","title":"(title)","comments":"","parent":25,"key":31,"isTreeExpanded":true},
 {"name":"Aadvik","title":"(title)","comments":"","parent":14,"key":32,"isTreeExpanded":true},
@@ -440,9 +439,9 @@
 {"name":"Onkar prasad","title":"(title)","comments":"","parent":4,"key":38,"isTreeExpanded":true,"spouse":"Raghuvansh kumari"},
 {"name":"Deepak","title":"(title)","comments":"","parent":38,"key":39,"isTreeExpanded":true,"spouse":"Annu"},
 {"name":"Karuna","title":"(title)","comments":"","parent":38,"key":40,"isTreeExpanded":true,"spouse":"Neeraj athaiya"},
-{"name":"Saroj","title":"(title)","comments":"","parent":4,"key":41,"isTreeExpanded":false,"spouse":"Satendra verma"},
+{"name":"Saroj","title":"(title)","comments":"","parent":4,"key":41,"isTreeExpanded":true,"spouse":"Satendra verma"},
 {"name":"Vinod","title":"(title)","comments":"","parent":4,"key":42,"isTreeExpanded":true,"spouse":"Shivpal singh"},
-{"name":"Karishma/Cheenu","title":"(title)","comments":"","parent":41,"key":43,"isTreeExpanded":false},
+{"name":"Karishma/Cheenu","title":"(title)","comments":"","parent":41,"key":43,"isTreeExpanded":false,"spouse":"Akshay"},
 {"name":"Ayansh","title":"(title)","comments":"","parent":18,"key":44,"isTreeExpanded":true},
 {"name":"Kedar nath","title":"(title)","comments":"","parent":4,"key":45,"isTreeExpanded":true,"spouse":"Premkala (mitavali)"},
 {"name":"omkumari","title":"(title)","comments":"","parent":4,"key":46,"isTreeExpanded":true,"spouse":"Shivdayal  (balipur)"},
